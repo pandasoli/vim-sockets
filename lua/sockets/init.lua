@@ -1,8 +1,9 @@
-local Discord = require 'sockets.discord'
 local msgpack = require 'deps.msgpack'
 
-require 'sockets.std'
 require 'lib.list_to_argv'
+require 'lib.json'
+require 'sockets.std'
+require 'sockets.discord'
 
 
 local Sockets = {
@@ -13,7 +14,7 @@ local Sockets = {
 function Sockets:setup()
   local seed_nums = {}
   self.socket:gsub('.', function(c) table.insert(seed_nums, c:byte()) end)
-  self.id = Discord.generate_uuid(tonumber(table.concat(seed_nums)) / os.clock())
+  self.id = Generate_uuid(tonumber(table.concat(seed_nums)) / os.clock())
 
   self:register_self()
 
@@ -25,7 +26,7 @@ function Sockets:setup()
 end
 
 function Sockets:print_peers()
-  print(ListToArgv(self.peers))
+  print(EncodeJSON(self.peers))
 end
 
 function Sockets:register_self()

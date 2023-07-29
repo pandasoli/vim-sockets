@@ -1,6 +1,20 @@
-local Discord = {}
+---@param data table
+---@return boolean
+function IsArray(data)
+  local i = 1
 
-function Discord.generate_uuid(seed)
+  for k, _ in pairs(data) do
+    if k ~= i then
+      return false
+    end
+
+    i = i + 1
+  end
+
+  return true
+end
+
+function Generate_uuid(seed)
   local index = 0
   local template = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'
 
@@ -18,5 +32,3 @@ function Discord.generate_uuid(seed)
 
   return uuid
 end
-
-return Discord
