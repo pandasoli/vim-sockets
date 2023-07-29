@@ -2,7 +2,7 @@ local Discord = require 'sockets.discord'
 local msgpack = require 'deps.msgpack'
 
 require 'sockets.std'
-require 'lib.print_data'
+require 'lib.list_to_argv'
 
 
 local Sockets = {
@@ -25,7 +25,7 @@ function Sockets:setup()
 end
 
 function Sockets:print_peers()
-  print(PrintData(self.peers))
+  print(ListToArgv(self.peers))
 end
 
 function Sockets:register_self()
@@ -81,7 +81,7 @@ end
 function Sockets:call_remote_method(socket, name, args)
   local cmd_fmt = 'lua package.loaded.sockets:%s(%s)'
 
-  local arglist = PrintData(args)
+  local arglist = ListToArgv(args)
   local cmd = string.format(cmd_fmt, name, arglist)
 
   self:call_remote_nvim_instance(socket, cmd)
