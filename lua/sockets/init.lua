@@ -1,5 +1,4 @@
 local Discord = require 'sockets.discord'
-local serpent = require 'deps.serpent'
 local msgpack = require 'deps.msgpack'
 
 require 'sockets.std'
@@ -82,18 +81,9 @@ end
 function Sockets:call_remote_method(socket, name, args)
   local cmd_fmt = 'lua package.loaded.sockets:%s(%s)'
 
-  for i, arg in pairs(args) do
-    if type(arg) == 'string' then
-      args[i] = string.format("'%s'", arg)
-    elseif type(arg) == 'boolean' then
-      args[i] = string.format("'%s'", tostring(arg))
-    elseif type(arg) == 'table' then
-      args[i] = string.format('(function() %s end)()', serpent.dump(arg))
-    end
-  end
-
-  local arglist = table.concat(args, ',')
+  local arglist = PrintData(args)
   local cmd = string.format(cmd_fmt, name, arglist)
+
   self:call_remote_nvim_instance(socket, cmd)
 end
 
