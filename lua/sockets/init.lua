@@ -3,7 +3,7 @@ local msgpack = require 'deps.msgpack'
 require 'lib.list_to_argv'
 require 'lib.json'
 require 'sockets.std'
-require 'sockets.discord'
+require 'sockets.utils'
 
 
 local Sockets = {
