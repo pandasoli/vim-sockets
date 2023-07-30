@@ -1,17 +1,18 @@
----@param data table
----@return string
-function ListToArgv(data)
-  local res = ''
+require 'sockets.utils'
 
-  for i, val in ipairs(data) do
+
+---@param list table
+---@return string
+function ListToArgv(list)
+  local function convert_data(data)
     if
-      type(val) == 'nil'
-      or type(val) == 'boolean'
-      or type(val) == 'number'
+      type(data) == 'nil'
+      or type(data) == 'boolean'
+      or type(data) == 'number'
     then
-      res = res .. val
-    elseif type(val) == 'string' then
-      local str = val
+      return tostring(data)
+    elseif type(data) == 'string' then
+      local str = data
         :gsub('"', '\\"')
         :gsub('\n', '\\n')
         :gsub('\r', '\\r')
@@ -19,11 +20,41 @@ function ListToArgv(data)
         :gsub('\027', '\\027')
 
       return '"' .. str .. '"'
-    elseif type(val) == 'table' then
-      res = res .. ListToArgv(val)
+    elseif type(data) == 'table' then
+      local res = '{'
+      local lkeys = 1
+
+      for _, _ in pairs(data) do lkeys = lkeys + 1 end
+
+      if IsArray(data) then
+        for i, v in ipairs(data) do
+          res = res .. convert_data(v)
+          if i < lkeys - 1 then res = res .. ', ' end
+        end
+      else
+        local i = 1
+
+        for k, v in pairs(data) do
+          res = res
+            .. ('[' .. convert_data(tostring(k)) .. '] = ')
+            .. convert_data(v)
+
+          if i < lkeys - 1 then res = res .. ', ' end
+          i = i + 1
+        end
+      end
+
+      return res .. '}'
     end
 
-    if i < #data - 1 then res = res .. ', ' end
+    return 'nil'
+  end
+
+  local res = ''
+
+  for i, val in ipairs(list) do
+    res = res .. convert_data(val)
+    if i < #list then res = res .. ', ' end
   end
 
   return res
