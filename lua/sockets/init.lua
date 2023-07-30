@@ -60,7 +60,7 @@ end
 
 ---@return table
 function Sockets.get_socket_paths()
-  local cmd = "ss -lx | grep 'lvim'"
+  local cmd = "ss -lx | grep 'vim'"
 
   local function handle(lines)
     local sockets = {}
