@@ -8,20 +8,23 @@ require 'sockets.utils'
 
 local Sockets = {
   socket = vim.v.servername,
+  data = {},
   sockets = {}
 }
 
-function Sockets:setup()
+---@param data string
+function Sockets:setup(data)
+  self.data = data or {}
   self:register_self()
 
   vim.api.nvim_create_autocmd('ExitPre', {
     callback = function() self:unregister_self() end
   })
 
-  vim.cmd([[command! -nargs=0 PrintPeers lua package.loaded.sockets:print_peers()]])
+  vim.cmd([[command! -nargs=0 PrintSockets lua package.loaded.sockets:print_sockets()]])
 end
 
-function Sockets:print_peers()
+function Sockets:print_sockets()
   print(EncodeJSON(self.sockets))
 end
 
@@ -30,16 +33,16 @@ function Sockets:register_self()
 
   for _, socket in pairs(sockets) do
     if socket ~= self.socket then
-      self:call_remote_method(socket, 'register_peer_setup', { self.socket })
+      self:call_remote_method(socket, 'register_socket_setup', { self.socket, self.data })
     end
   end
 end
 
 function Sockets:unregister_self()
-  for _, socket in ipairs(self.sockets) do
+  for socket, _ in pairs(self.sockets) do
     if socket ~= self.socket then
-      print('Unregistering self to peer ' .. socket)
-      self:call_remote_method(socket, 'unregister_peer', { self.socket })
+      print('Unregistering self to socket ' .. socket)
+      self:call_remote_method(socket, 'unregister_socket', { self.socket })
     end
   end
 end
@@ -99,32 +102,25 @@ end
 --- Start server methods ---
 
 ---@param socket string
-function Sockets:register_peer_setup(socket)
-  self:register_peer(socket)
+---@param data table
+function Sockets:register_socket_setup(socket, data)
+  self:register_socket(socket, data)
 
-  print('Sending self to peer ' .. socket)
-  self:call_remote_method(socket, 'register_peer', { self.socket })
+  print('Sending self to socket ' .. socket)
+  self:call_remote_method(socket, 'register_socket', { self.socket, self.data })
 end
 
 ---@param socket string
-function Sockets:register_peer(socket)
+---@param data table
+function Sockets:register_socket(socket, data)
   print('Registering socket ' .. socket)
-  table.insert(self.sockets, socket)
+  self.sockets[socket] = data
 end
 
 ---@param socket string
-function Sockets:unregister_peer(socket)
+function Sockets:unregister_socket(socket)
   print('Unregistering socket ' .. socket)
-
-  local peers = {}
-
-  for _, socket_ in ipairs(self.sockets) do
-    if socket_ ~= socket then
-      table.insert(peers, socket)
-    end
-  end
-
-  self.sockets = peers
+  self.sockets[socket] = nil
 end
 
 return Sockets
