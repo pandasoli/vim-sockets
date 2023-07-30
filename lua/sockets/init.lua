@@ -20,11 +20,11 @@ function Sockets:setup(data, show_logs)
 
   self:register_self()
 
-  vim.api.nvim_create_autocmd('ExitPre', {
-    callback = function() self:unregister_self() end
-  })
+  vim.cmd([[
+    command! -nargs=0 PrintSockets lua package.loaded.sockets:print_sockets()
 
-  vim.cmd([[command! -nargs=0 PrintSockets lua package.loaded.sockets:print_sockets()]])
+    autocmd ExitPre * lua package.loaded.sockets:unregister_self()
+  ]])
 end
 
 function Sockets:print_sockets()
