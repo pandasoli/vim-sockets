@@ -9,12 +9,15 @@ require 'sockets.utils'
 local Sockets = {
   socket = vim.v.servername,
   data = {},
-  sockets = {}
+  sockets = {},
+  show_logs = true
 }
 
 ---@param data string
-function Sockets:setup(data)
+function Sockets:setup(data, show_logs)
   self.data = data or {}
+  self.show_logs = not not show_logs
+
   self:register_self()
 
   vim.api.nvim_create_autocmd('ExitPre', {
@@ -26,6 +29,14 @@ end
 
 function Sockets:print_sockets()
   print(EncodeJSON(self.sockets))
+end
+
+---@param from string
+---@param msg string
+function Sockets:log(from, msg)
+  if self.show_logs then
+    print('[' .. from .. ']:', msg)
+  end
 end
 
 function Sockets:register_self()
@@ -41,7 +52,7 @@ end
 function Sockets:unregister_self()
   for socket, _ in pairs(self.sockets) do
     if socket ~= self.socket then
-      print('Unregistering self to socket ' .. socket)
+      self:log('unregister_self', 'Unregistering self to socket ' .. socket)
       self:call_remote_method(socket, 'unregister_socket', { self.socket })
     end
   end
@@ -93,7 +104,7 @@ function Sockets:call_remote_nvim_instance(socket, cmd)
     local packed = msgpack.pack({ 0, 0, 'nvim_command', { cmd } })
 
     remote_nvim_instance:write(packed, function()
-      print('Wrote to remote nvim instance: ' .. socket)
+      self:log('call_remote_nvim_instance', 'Wrote to remote nvim instance: ' .. socket)
     end)
   end)
 end
@@ -106,20 +117,20 @@ end
 function Sockets:register_socket_setup(socket, data)
   self:register_socket(socket, data)
 
-  print('Sending self to socket ' .. socket)
+  self:log('register_socket_setup', 'Sending self to socket ' .. socket)
   self:call_remote_method(socket, 'register_socket', { self.socket, self.data })
 end
 
 ---@param socket string
 ---@param data table
 function Sockets:register_socket(socket, data)
-  print('Registering socket ' .. socket)
+  self:log('register_socket', 'Registering socket ' .. socket)
   self.sockets[socket] = data
 end
 
 ---@param socket string
 function Sockets:unregister_socket(socket)
-  print('Unregistering socket ' .. socket)
+  self:log('unregister_socket', 'Unregistering socket ' .. socket)
   self.sockets[socket] = nil
 end
 
