@@ -40,7 +40,7 @@ function Sockets:log(from, msg)
 end
 
 function Sockets:register_self()
-  local sockets = self:get_nvim_socket_paths()
+  local sockets = self.get_socket_paths()
 
   for _, socket in pairs(sockets) do
     if socket ~= self.socket then
@@ -59,7 +59,7 @@ function Sockets:unregister_self()
 end
 
 ---@return table
-function Sockets:get_nvim_socket_paths()
+function Sockets.get_socket_paths()
   local cmd = "ss -lx | grep 'lvim'"
 
   local function handle(lines)
@@ -92,18 +92,18 @@ function Sockets:call_remote_method(socket, name, args)
   local arglist = ListToArgv(args)
   local cmd = string.format(cmd_fmt, name, arglist)
 
-  self:call_remote_nvim_instance(socket, cmd)
+  self:call_remote_instance(socket, cmd)
 end
 
 ---@param socket string
 ---@param cmd string
-function Sockets:call_remote_nvim_instance(socket, cmd)
-  local remote_nvim_instance = assert(vim.loop.new_pipe(true))
+function Sockets:call_remote_instance(socket, cmd)
+  local pipe = assert(vim.loop.new_pipe(true))
 
-  remote_nvim_instance:connect(socket, function()
+  pipe:connect(socket, function()
     local packed = msgpack.pack({ 0, 0, 'nvim_command', { cmd } })
 
-    remote_nvim_instance:write(packed, function()
+    pipe:write(packed, function()
       self:log('call_remote_nvim_instance', 'Wrote to remote nvim instance: ' .. socket)
     end)
   end)
