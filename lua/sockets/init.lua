@@ -8,20 +8,24 @@ require 'sockets.utils'
 
 local Sockets = {
   socket = vim.v.servername,
-  data = {},
   sockets = {},
-  show_logs = true
+  show_logs = true,
+
+  ---@param data any
+  dataUpdate = function(data)
+    print(EncodeJSON(data))
+  end
 }
 
----@param data string
+---@param data any
 function Sockets:setup(data, show_logs)
-  self.data = data or {}
   self.show_logs = not not show_logs
 
-  self:register_self()
+  self:register_self(data)
 
   vim.cmd([[
     command! -nargs=0 PrintSockets lua package.loaded.sockets:print_sockets()
+    command! -nargs=? UpdateData lua package.loaded.sockets:updateData(<q-args>)
 
     autocmd ExitPre * lua package.loaded.sockets:unregister_self()
   ]])
@@ -31,26 +35,42 @@ function Sockets:print_sockets()
   print(EncodeJSON(self.sockets))
 end
 
----@param from string
----@param msg string
-function Sockets:log(from, msg)
-  if self.show_logs then
-    print('[' .. from .. ']:', msg)
+---@param data any
+function Sockets:updateData(data)
+  self.dataUpdate(data)
+
+  for _, socket in ipairs(self.sockets) do
+    if socket ~= self.socket then
+      self:call_remote_method(socket, 'update_data', { self.socket, data })
+    end
   end
 end
 
-function Sockets:register_self()
+---@param from string|nil
+---@param msg string
+function Sockets:log(from, msg)
+  if self.show_logs then
+    print(
+      from and '[' .. from .. ']:' or ' ',
+      msg
+    )
+  end
+end
+
+---@param data any
+function Sockets:register_self(data)
   local sockets = self.get_socket_paths()
 
-  for _, socket in pairs(sockets) do
+  for _, socket in ipairs(sockets) do
     if socket ~= self.socket then
-      self:call_remote_method(socket, 'register_socket_setup', { self.socket, self.data })
+      table.insert(self.sockets, socket)
+      self:call_remote_method(socket, 'register_socket', { self.socket, data })
     end
   end
 end
 
 function Sockets:unregister_self()
-  for socket, _ in pairs(self.sockets) do
+  for _, socket in ipairs(self.sockets) do
     if socket ~= self.socket then
       self:log('unregister_self', 'Unregistering self to socket ' .. socket)
       self:call_remote_method(socket, 'unregister_socket', { self.socket })
@@ -104,7 +124,7 @@ function Sockets:call_remote_instance(socket, cmd)
     local packed = msgpack.pack({ 0, 0, 'nvim_command', { cmd } })
 
     pipe:write(packed, function()
-      self:log('call_remote_nvim_instance', 'Wrote to remote nvim instance: ' .. socket)
+      self:log('call_remote_instance', 'Wrote to remote nvim instance: ' .. socket)
     end)
   end)
 end
@@ -114,24 +134,24 @@ end
 
 ---@param socket string
 ---@param data table
-function Sockets:register_socket_setup(socket, data)
-  self:register_socket(socket, data)
-
-  self:log('register_socket_setup', 'Sending self to socket ' .. socket)
-  self:call_remote_method(socket, 'register_socket', { self.socket, self.data })
-end
-
----@param socket string
----@param data table
 function Sockets:register_socket(socket, data)
   self:log('register_socket', 'Registering socket ' .. socket)
-  self.sockets[socket] = data
+
+  table.insert(self.sockets, socket)
+  self.updateData(data)
 end
 
 ---@param socket string
 function Sockets:unregister_socket(socket)
   self:log('unregister_socket', 'Unregistering socket ' .. socket)
   self.sockets[socket] = nil
+end
+
+---@param socket string
+---@param data any
+function Sockets:update_data(socket, data)
+  self:log('update_data', 'Updating data from socket ' .. socket)
+  self.dataUpdate(data)
 end
 
 return Sockets
