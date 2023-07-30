@@ -47,10 +47,10 @@ end
 ---@return table
 function Sockets:get_nvim_socket_paths()
   local cmd = "ss -lx | grep 'lvim'"
-  local sockets = {}
-  local data
 
   local function handle(lines)
+    local sockets = {}
+
     for i = 1, #lines do
       local socket = lines[i]:match '%s(/.-)%s'
 
@@ -58,14 +58,15 @@ function Sockets:get_nvim_socket_paths()
         table.insert(sockets, socket)
       end
     end
+
+    return sockets
   end
 
   local f = assert(io.popen(cmd))
-  data = f:read('*a')
+  local data = f:read('*a')
   f:close()
 
-  handle(data:split '\n')
-  return sockets
+  return handle(data:split '\n')
 end
 
 ---@param socket string
