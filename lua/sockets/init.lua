@@ -8,14 +8,10 @@ require 'sockets.utils'
 
 local Sockets = {
   socket = vim.v.servername,
-  peers = {}
+  sockets = {}
 }
 
 function Sockets:setup()
-  local seed_nums = {}
-  self.socket:gsub('.', function(c) table.insert(seed_nums, c:byte()) end)
-  self.id = Generate_uuid(tonumber(table.concat(seed_nums)) / os.clock())
-
   self:register_self()
 
   vim.api.nvim_create_autocmd('ExitPre', {
@@ -26,7 +22,7 @@ function Sockets:setup()
 end
 
 function Sockets:print_peers()
-  print(EncodeJSON(self.peers))
+  print(EncodeJSON(self.sockets))
 end
 
 function Sockets:register_self()
@@ -34,20 +30,16 @@ function Sockets:register_self()
 
   for _, socket in pairs(sockets) do
     if socket ~= self.socket then
-      self:call_remote_method(socket, 'register_peer_setup', { self.id, self.socket })
+      self:call_remote_method(socket, 'register_peer_setup', { self.socket })
     end
   end
 end
 
 function Sockets:unregister_self()
-  local self_as_peer = {
-    socket = self.socket
-  }
-
-  for id, peer in pairs(self.peers) do
-    if id ~= self.id then
-      print('Unregistering self to peer ' .. id)
-      self:call_remote_method(peer.socket, 'unregister_peer', { self.id, self_as_peer })
+  for _, socket in ipairs(self.sockets) do
+    if socket ~= self.socket then
+      print('Unregistering self to peer ' .. socket)
+      self:call_remote_method(socket, 'unregister_peer', { self.socket })
     end
   end
 end
@@ -105,39 +97,33 @@ end
 --- End client methods ---
 --- Start server methods ---
 
----@param id string
 ---@param socket string
-function Sockets:register_peer_setup(id, socket)
-  self:register_peer(id, socket)
+function Sockets:register_peer_setup(socket)
+  self:register_peer(socket)
 
-  print('Sending self to peer ' .. id)
-  self:call_remote_method(socket, 'register_peer', { self.id, self.socket })
+  print('Sending self to peer ' .. socket)
+  self:call_remote_method(socket, 'register_peer', { self.socket })
 end
 
----@param id string
 ---@param socket string
-function Sockets:register_peer(id, socket)
-  print('Registering peer ' .. id)
-
-  self.peers[id] = {
-    socket = socket
-  }
+function Sockets:register_peer(socket)
+  print('Registering socket ' .. socket)
+  table.insert(self.sockets, socket)
 end
 
----@param id string
----@param peer table
-function Sockets:unregister_peer(id, peer)
-  print('Unregistering peer ' .. id .. '... ' .. vim.inspect(peer))
+---@param socket string
+function Sockets:unregister_peer(socket)
+  print('Unregistering socket ' .. socket)
 
   local peers = {}
 
-  for peer_id, data in pairs(self.peers) do
-    if peer_id ~= id then
-      peers[id] = data
+  for _, socket_ in ipairs(self.sockets) do
+    if socket_ ~= socket then
+      table.insert(peers, socket)
     end
   end
 
-  self.peers = peers
+  self.sockets = peers
 end
 
 return Sockets
