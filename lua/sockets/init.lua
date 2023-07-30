@@ -18,6 +18,7 @@ local Sockets = {
 }
 
 ---@param data any
+---@param show_logs boolean|nil
 function Sockets:setup(data, show_logs)
   self.show_logs = not not show_logs
 
@@ -25,7 +26,7 @@ function Sockets:setup(data, show_logs)
 
   vim.cmd([[
     command! -nargs=0 PrintSockets lua package.loaded.sockets:print_sockets()
-    command! -nargs=? UpdateData lua package.loaded.sockets:updateData(<q-args>)
+    command! -nargs=? UpdateSocketData lua package.loaded.sockets:updateData(<q-args>)
 
     autocmd ExitPre * lua package.loaded.sockets:unregister_self()
   ]])
@@ -40,9 +41,7 @@ function Sockets:updateData(data)
   self.dataUpdate(data)
 
   for _, socket in ipairs(self.sockets) do
-    if socket ~= self.socket then
-      self:call_remote_method(socket, 'update_data', { self.socket, data })
-    end
+    self:call_remote_method(socket, 'update_data', { self.socket, data })
   end
 end
 
@@ -71,10 +70,8 @@ end
 
 function Sockets:unregister_self()
   for _, socket in ipairs(self.sockets) do
-    if socket ~= self.socket then
-      self:log('unregister_self', 'Unregistering self to socket ' .. socket)
-      self:call_remote_method(socket, 'unregister_socket', { self.socket })
-    end
+    self:log('unregister_self', 'Unregistering self to socket ' .. socket)
+    self:call_remote_method(socket, 'unregister_socket', { self.socket })
   end
 end
 
