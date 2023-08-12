@@ -11,4 +11,6 @@ lua << EOF
   end)
 
   vim.api.nvim_create_user_command('SendMsg', function() Sockets:emmit('msg', 'hi') end, { nargs = 0 })
+
+  Sockets:unregister_self()
 EOF

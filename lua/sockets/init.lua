@@ -84,7 +84,6 @@ function Sockets:register_self()
   end
 end
 
----@private
 function Sockets:unregister_self()
   Logger:log('unregister_self', 'Unregistering self for', #self.sockets, 'sockets')
 
