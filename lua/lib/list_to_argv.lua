@@ -1,5 +1,17 @@
-require 'sockets.utils'
+---@param data table
+---@return boolean
+local function IsArray(data)
+  local count = 0
 
+  for key, _ in pairs(data) do
+    if type(key) ~= 'number' then return false end
+
+    count = count + 1
+    if key ~= count then return false end
+  end
+
+  return true
+end
 
 ---@param list table
 ---@return string
