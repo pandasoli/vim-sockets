@@ -19,6 +19,7 @@ local Sockets = {
   sockets = {},
   receivers = {}
 }
+Sockets.__index = Sockets
 
 ---@param vim_events? boolean
 function Sockets:setup(vim_events)
@@ -27,11 +28,19 @@ function Sockets:setup(vim_events)
   if vim_events then
     vim.api.nvim_create_user_command('PrintSockets', function() self:print_sockets() end, { nargs = 0 })
     vim.api.nvim_create_user_command('PrintLogs', function() Logger:print() end, { nargs = 0 })
-
-    vim.api.nvim_create_autocmd('ExitPre', {
-      callback = function() self:unregister_self() end
-    })
   end
+
+  vim.api.nvim_create_autocmd('ExitPre', {
+    callback = function() self:unregister_self() end
+  })
+end
+
+---@param vim_events? boolean
+function Sockets.new(vim_events)
+  local instance = setmetatable({}, Sockets)
+  instance:setup(vim_events)
+
+  return instance
 end
 
 function Sockets:print_sockets()
@@ -48,7 +57,7 @@ function Sockets:emmit(event, data)
     data = data
   }
 
-  Logger:log('emmit', 'Emmiting data to', #self.sockets, 'sockets')
+  Logger:log('emmit', 'Emmiting event', event, 'to', #self.sockets, 'sockets')
 
   for _, socket in ipairs(self.sockets) do
     local err = self:call_remote_method(socket, 'receive_data', { event, props })
@@ -60,7 +69,7 @@ function Sockets:emmit(event, data)
 end
 
 ---@param event string
----@param fn function
+---@param fn fun(props: ReceiverProps)
 function Sockets:on(event, fn)
   self.receivers[event] = fn
 end
