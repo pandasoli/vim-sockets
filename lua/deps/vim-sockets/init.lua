@@ -32,7 +32,7 @@ function VimSockets:setup(dep_path, vim_events)
     vim.api.nvim_create_user_command('PrintLogs', function() Logger:print() end, { nargs = 0 })
   end
 
-  vim.api.nvim_create_autocmd('ExitPre', {
+  vim.api.nvim_create_autocmd('VimLeavePre', {
     callback = function() self:unregister_self() end
   })
 end

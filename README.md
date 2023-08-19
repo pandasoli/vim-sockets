@@ -6,42 +6,81 @@
 </div>
 <br/>
 
-## Setting up environment
+## Environment
 
-1. Copy the folder `/lua` to your project's dependencies folder
-2. And require it
+1. Copy the folder `lua/deps/vim-sockets` to your project's dependencies folder
+2. Change the imports (**Lua** doesn't support relative imports)
+3. And require it
   ```lua
-  local VimSockets = require 'vim-sockets.sockets.init'
+  local VimSockets = require 'vim-sockets'
   ```
 
+<br/>
+<details>
+  <summary>How I implemented relative imports</summary>
+
+  ```lua
+  ScriptPath = debug.getinfo(1, 'S').source:sub(2)
+  package.path = package.path .. ';' .. ScriptPath:match '(.*)/.*/' .. '/deps/?.lua'
+  ```
+
+  `ScriptPath` is `lua/vplugin/init.lua`,  
+  `:match` turns it into `lua`.
+</details>
+
+<br/>
+<br/>
+<br/>
+
+## Setting up
+```lua
+---@class VimSockets
+---@field socket    string
+---@field dep_path  string
+---@field sockets   string[]
+---@field receivers table<string, fun(props: ReceiverProps)>
+
+---@param dep_path    string # package.loaded...
+---@param vim_events? boolean
+function VimSockets:setup(dep_path, vim_events) end
+```
+
+- `dep_path` is the path to access itself in the loaded vim plugin
+- `vim_events` create or not `:PrintLogs` and `:PrintSockets`
+
+  By default the event `VimLeavePre` is setted with `:unregister_self()`.
+
+<br/>
+<br/>
 <br/>
 
 ## Using
 
-After requiring it the next step is setting up.
-
-If you're gonna use it globaly use the function `:setup`,  
-If you're gonna store an instance of it use `:new`.
-
-Both receive `vim_events: boolean` to initialize some Vim commands for debugging.
-
-Functions:
 - `:on(event: string, fn: fun(props: ReceiverProps))`
 
-  Sets a function to be called when the said event is called.
+  Sets a callback for when the said event is received.
 
-  ```lua
-  ---@class ReceiverProps
-  ---@field event string
-  ---@field socket_emmiter string
-  ---@field data any
-  ```
+- `:emit(event: string, data: any)`
 
-- `:emmit(event: string, data: any)`
+  Emit the said event passing the said data to all the other instances.
 
-  Calls the said event sending the said data.
+- `:emit_to(socket: string, event: string: data: any)`
+
+  Emit the said event with the said data to the said socket.
+
+- `:unregister_self()`
+
+  Unregister/disable/disconnect the current instance.
 
 <br/>
+<br/>
+<br/>
 
-By default it creates the Vim autocmd `PreExit` to call `:unregister_self`.  
-But if you want to close the connection with the other instances you might call it.
+## Types
+
+```lua
+---@class ReceiverProps
+---@field event   string
+---@field emitter string
+---@field data    any
+```
